@@ -6,13 +6,16 @@ import javafx.animation.KeyFrame;
 import javafx.animation.KeyValue;
 import javafx.animation.Timeline;
 import javafx.beans.DefaultProperty;
+import javafx.beans.property.BooleanProperty;
+import javafx.beans.property.BooleanPropertyBase;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.ObjectPropertyBase;
+import javafx.beans.property.SimpleBooleanProperty;
+import javafx.beans.value.ChangeListener;
 import javafx.geometry.VPos;
 import javafx.scene.CacheHint;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
-import javafx.scene.effect.MotionBlur;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.Region;
 import javafx.scene.paint.Color;
@@ -24,48 +27,53 @@ import javafx.util.Duration;
 
 @DefaultProperty("children")
 public class SplitFlap extends Region {
-    private static final double                PREFERRED_WIDTH  = 150;
-    private static final double                PREFERRED_HEIGHT = 200;
-    private static final double                MINIMUM_WIDTH    = 50;
-    private static final double                MINIMUM_HEIGHT   = 50;
-    private static final double                MAXIMUM_WIDTH    = 1024;
-    private static final double                MAXIMUM_HEIGHT   = 1024;
-    private static final double                ASPECT_RATIO     = PREFERRED_HEIGHT / PREFERRED_WIDTH;
-    private              double                halfFlipTime;
-    private              double                width;
-    private              double                height;
-    private              double                flapWidth;
-    private              double                flapHeight;
-    private              double                flapCornerRadius;
-    private              double                flapCenterX;
-    private              double                fontOffsetY;
-    private              Canvas                backTopCanvas;
-    private              GraphicsContext       backTopCtx;
-    private              Canvas                backBottomCanvas;
-    private              GraphicsContext       backBottomCtx;
-    private              Canvas                flapTopCanvas;
-    private              GraphicsContext       flapTopCtx;
-    private              Canvas                flapBottomCanvas;
-    private              GraphicsContext       flapBottomCtx;
-    private              Pane                  pane;
-    private              Color                 _backgroundColor;
-    private              ObjectProperty<Color> backgroundColor;
-    private              Color                 _textColor;
-    private              ObjectProperty<Color> textColor;
-    private              double                fontSize;
-    private              Font                  font;
-    private              CharacterSet          characterSet;
-    private final        String[]              selectedCharacterSet;
-    private              int                   nextIndex;
-    private              int                   selectedIndex;
-    private              int                   prevIndex;
-    private              String                currentCharacter;
-    private              String                targetCharacter;
-    private final        Rotate                rotateTopFlap;
-    private final        Rotate                rotateBottomFlap;
-    private final        Timeline              timelineTopFlap;
-    private final        Timeline              timelineBottomFlap;
-    private              boolean               isFlipping;
+    private static final double                  PREFERRED_WIDTH  = 150;
+    private static final double                  PREFERRED_HEIGHT = 200;
+    private static final double                  MINIMUM_WIDTH    = 50;
+    private static final double                  MINIMUM_HEIGHT   = 50;
+    private static final double                  MAXIMUM_WIDTH    = 1024;
+    private static final double                  MAXIMUM_HEIGHT   = 1024;
+    private static final double                  ASPECT_RATIO     = PREFERRED_HEIGHT / PREFERRED_WIDTH;
+    private              double                  halfFlipTime;
+    private              double                  width;
+    private              double                  height;
+    private              double                  flapWidth;
+    private              double                  flapHeight;
+    private              double                  flapCornerRadius;
+    private              double                  flapCenterX;
+    private              double                  fontOffsetY;
+    private              Canvas                  backTopCanvas;
+    private              GraphicsContext         backTopCtx;
+    private              Canvas                  backBottomCanvas;
+    private              GraphicsContext         backBottomCtx;
+    private              Canvas                  flapTopCanvas;
+    private              GraphicsContext         flapTopCtx;
+    private              Canvas                  flapBottomCanvas;
+    private              GraphicsContext         flapBottomCtx;
+    private              Pane                    pane;
+    private              Color                   _backgroundColor;
+    private              ObjectProperty<Color>   backgroundColor;
+    private              Color                   topColor;
+    private              Color                   bottomColor;
+    private              Color                   _textColor;
+    private              ObjectProperty<Color>   textColor;
+    private              boolean                 _shaded;
+    private              BooleanProperty         shaded;
+    private              double                  fontSize;
+    private              Font                    font;
+    private              CharacterSet            characterSet;
+    private final        String[]                selectedCharacterSet;
+    private              int                     nextIndex;
+    private              int                     selectedIndex;
+    private              int                     prevIndex;
+    private              String                  currentCharacter;
+    private              String                  targetCharacter;
+    private final        Rotate                  rotateTopFlap;
+    private final        Rotate                  rotateBottomFlap;
+    private final        Timeline                timelineTopFlap;
+    private final        Timeline                timelineBottomFlap;
+    private              BooleanProperty         flipping;
+    private              ChangeListener<Boolean> flippingListener;
 
 
 
@@ -80,17 +88,20 @@ public class SplitFlap extends Region {
         this(CharacterSet.ALPHA_NUMERIC, backgroundColor, textColor);
     }
     public SplitFlap(final Color backgroundColor, final Color textColor, final double flipTime) {
-        this(CharacterSet.ALPHA_NUMERIC, backgroundColor, textColor, flipTime);
+        this(CharacterSet.ALPHA_NUMERIC, backgroundColor, textColor, flipTime, false);
     }
     public SplitFlap(final CharacterSet characterSet, final Color backgroundColor, final Color textColor) {
-        this(characterSet, backgroundColor, textColor, Constants.DEFAULT_FLIP_TIME);
+        this(characterSet, backgroundColor, textColor, Constants.DEFAULT_FLIP_TIME, false);
     }
-    public SplitFlap(final CharacterSet characterSet, final Color backgroundColor, final Color textColor, final double flipTime) {
+    public SplitFlap(final CharacterSet characterSet, final Color backgroundColor, final Color textColor, final double flipTime, final boolean shaded) {
         if (flipTime < 10 || flipTime > 1000) { throw new IllegalArgumentException("Flip time must be within 10-1000 ms"); }
         this.characterSet         = characterSet;
         this.selectedCharacterSet = characterSet.characters;
         this._backgroundColor     = backgroundColor;
+        this.topColor             = brighter(backgroundColor);
+        this.bottomColor          = darker(backgroundColor);
         this._textColor           = textColor;
+        this._shaded              = shaded;
         this.fontSize             = 250;
         this.font                 = Fonts.bebasNeue(this.fontSize);
         this.nextIndex            = 1;
@@ -103,7 +114,9 @@ public class SplitFlap extends Region {
         this.timelineTopFlap      = new Timeline();
         this.timelineBottomFlap   = new Timeline();
         this.halfFlipTime         = flipTime / 2;
-        this.isFlipping           = false;
+        this.flipping             = new SimpleBooleanProperty(false);
+        this.flippingListener     = (o, ov, nv) -> { if (!nv) { setCharacter(" "); } };
+
         initGraphics();
         registerListeners();
     }
@@ -180,7 +193,8 @@ public class SplitFlap extends Region {
 
             this.currentCharacter = selectedCharacterSet[selectedIndex];
             redraw();
-            this.isFlipping = false;
+            this.flipping.set(false);
+            this.flipping.removeListener(flippingListener);
 
             if (!this.currentCharacter.equals(this.targetCharacter)) { flip(); }
         });
@@ -194,6 +208,8 @@ public class SplitFlap extends Region {
     public void setBackgroundColor(final Color backgroundColor) {
         if (null == this.backgroundColor) {
             this._backgroundColor = backgroundColor;
+            this.topColor         = brighter(backgroundColor);
+            this.bottomColor      = darker(backgroundColor);
             redraw();
         } else {
             this.backgroundColor.set(backgroundColor);
@@ -202,7 +218,11 @@ public class SplitFlap extends Region {
     public ObjectProperty<Color> backgroundColorProperty() {
         if (null == this.backgroundColor) {
             this.backgroundColor = new ObjectPropertyBase<>(_backgroundColor) {
-                @Override protected void invalidated() { redraw(); }
+                @Override protected void invalidated() {
+                    topColor    = brighter(get());
+                    bottomColor = darker(get());
+                    redraw();
+                }
                 @Override public Object getBean() { return SplitFlap.this; }
                 @Override public String getName() { return "backgroundColor"; }
             };
@@ -232,9 +252,31 @@ public class SplitFlap extends Region {
         return this.textColor;
     }
 
+    public boolean isShaded() {return null == this.shaded ? this._shaded : this.shaded.get(); }
+    public void setShaded(final boolean shaded) {
+        if (null == this.shaded) {
+            this._shaded = shaded;
+            redraw();
+        } else {
+            this.shaded.set(shaded);
+        }
+    }
+    public BooleanProperty shadedProperty() {
+        if (null == this.shaded) {
+            this.shaded = new BooleanPropertyBase(_shaded) {
+                @Override protected void invalidated() { redraw(); }
+                @Override public Object getBean() { return SplitFlap.this; }
+                @Override public String getName() { return "shaded"; }
+            };
+        }
+        return shaded;
+    }
+
+    public boolean canFlip() { return !flipping.get(); }
+
     public void setCharacter(final String character) {
         if (!characterSetContainsCharacter(character)) { throw new IllegalArgumentException("Character " +  character + " is not in current character set ( " + characterSet.name() + ")"); }
-        if (isFlipping) { return; }
+        if (flipping.get()) { return; }
         this.targetCharacter = character;
         flip();
     }
@@ -247,10 +289,14 @@ public class SplitFlap extends Region {
 
     public void reset() { setCharacter(" "); }
 
-    public boolean canFlip() { return !isFlipping; }
+    public void selfTest() {
+        flipping.addListener(this.flippingListener);
+        reset();
+        setCharacter("Z");
+    }
 
     private void flip() {
-        if (this.currentCharacter.equals(this.targetCharacter) || isFlipping) { return; }
+        if (this.currentCharacter.equals(this.targetCharacter) || flipping.get()) { return; }
 
         timelineTopFlap.stop();
         timelineBottomFlap.stop();
@@ -263,7 +309,7 @@ public class SplitFlap extends Region {
         KeyFrame keyFrameBottomFlap0 = new KeyFrame(Duration.millis(halfFlipTime), keyValueBottomFlap0);
         timelineBottomFlap.getKeyFrames().setAll(keyFrameBottomFlap0);
 
-        isFlipping = true;
+        flipping.set(true);
         timelineTopFlap.play();
     }
 
@@ -278,6 +324,13 @@ public class SplitFlap extends Region {
     @Override protected double computePrefHeight(final double width) { return super.computePrefHeight(width); }
     @Override protected double computeMaxWidth(final double height) { return MAXIMUM_WIDTH; }
     @Override protected double computeMaxHeight(final double width) { return MAXIMUM_HEIGHT; }
+
+    private Color darker(final Color color) {
+        return color.deriveColor(0, 1.0, 0.975, 1.0);
+    }
+    private Color brighter(final Color color) {
+        return color.deriveColor(0, 1.0, 1.0 / 0.975, 1.0);
+    }
 
 
     // ******************** Resize/Redraw *************************************
@@ -303,7 +356,6 @@ public class SplitFlap extends Region {
             font             = Fonts.bebasNeue(fontSize);
 
             rotateTopFlap.setPivotY(height * 0.5);
-            //rotateBottomFlap.setPivotY(-flapOffset1);
 
             backTopCanvas.setWidth(width);
             backTopCanvas.setHeight(flapHeight);
@@ -339,7 +391,7 @@ public class SplitFlap extends Region {
     private void redrawBackTop() {
         backTopCtx.setFont(font);
         backTopCtx.clearRect(0, 0, width, height);
-        backTopCtx.setFill(getBackgroundColor());
+        backTopCtx.setFill(isShaded() ? topColor : getBackgroundColor());
         backTopCtx.fillRoundRect(0, 0, flapWidth, flapHeight, flapCornerRadius, flapCornerRadius);
         backTopCtx.fillRect(0, flapCornerRadius, flapWidth, flapHeight);
         backTopCtx.setFill(getTextColor());
@@ -349,7 +401,7 @@ public class SplitFlap extends Region {
     private void redrawBackBottom() {
         backBottomCtx.setFont(font);
         backBottomCtx.clearRect(0, 0, width, height);
-        backBottomCtx.setFill(getBackgroundColor());
+        backBottomCtx.setFill(isShaded() ? bottomColor :  getBackgroundColor());
         backBottomCtx.fillRoundRect(0, 0, flapWidth, flapHeight, flapCornerRadius, flapCornerRadius);
         backBottomCtx.fillRect(0, -flapCornerRadius, flapWidth, flapHeight);
         backBottomCtx.setFill(getTextColor());
@@ -359,7 +411,7 @@ public class SplitFlap extends Region {
     private void redrawFlapTop() {
         flapTopCtx.setFont(font);
         flapTopCtx.clearRect(0, 0, width, height);
-        flapTopCtx.setFill(getBackgroundColor());
+        flapTopCtx.setFill(isShaded() ? topColor : getBackgroundColor());
         flapTopCtx.fillRoundRect(0, 0, flapWidth, flapHeight, flapCornerRadius, flapCornerRadius);
         flapTopCtx.fillRect(0, flapCornerRadius, flapWidth, flapHeight);
         flapTopCtx.setFill(getTextColor());
@@ -369,7 +421,7 @@ public class SplitFlap extends Region {
     private void redrawFlapBottom() {
         flapBottomCtx.setFont(font);
         flapBottomCtx.clearRect(0, 0, width, height);
-        flapBottomCtx.setFill(getBackgroundColor());
+        flapBottomCtx.setFill(isShaded() ? bottomColor :  getBackgroundColor());
         flapBottomCtx.fillRoundRect(0, 0, flapWidth, flapHeight, flapCornerRadius, flapCornerRadius);
         flapBottomCtx.fillRect(0, -flapCornerRadius, flapWidth, flapHeight);
         flapBottomCtx.setFill(getTextColor());

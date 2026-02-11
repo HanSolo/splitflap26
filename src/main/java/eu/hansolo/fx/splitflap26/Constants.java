@@ -4,7 +4,7 @@ import javafx.scene.paint.Color;
 
 
 public class Constants {
-    public static final Color    GRAY              = Color.color(0.25, 0.25, 0.25);
+    public static final Color    GRAY              = Color.rgb(31, 31, 31);
     public static final Color    WHITE             = Color.color(0.95, 0.95, 0.95);
     public static final Color    AZUL_BLUE         = Color.web("#152241");
     public static final Color    AZUL_BLUE_BRIGHT  = AZUL_BLUE.brighter();

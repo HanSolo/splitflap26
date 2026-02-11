@@ -60,7 +60,7 @@ public class Row extends Region {
 
         splitFlaps = new SplitFlap[NO_OF_CHARACTERS];
         for (int i = 0; i < NO_OF_CHARACTERS; i++) {
-            splitFlaps[i] = new SplitFlap(characterSet, backgroundColor, textColor, flipTime);
+            splitFlaps[i] = new SplitFlap(characterSet, backgroundColor, textColor, flipTime, true);
         }
 
         pane = new Pane();
@@ -86,6 +86,11 @@ public class Row extends Region {
     public void reset() {
         for (int i = 0 ; i < NO_OF_CHARACTERS; i++) {
             splitFlaps[i].reset();
+        }
+    }
+    public void selfTest() {
+        for (int i = 0 ; i < NO_OF_CHARACTERS; i++) {
+            splitFlaps[i].selfTest();
         }
     }
 
