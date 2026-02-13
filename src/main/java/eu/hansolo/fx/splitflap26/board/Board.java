@@ -17,32 +17,31 @@ import javafx.stage.Stage;
 
 
 public class Board extends Application {
-    private static final Color          PANEL_COLOR      = Constants.AZUL_BLUE;
-    private static final Color          BACKGROUND_COLOR = Constants.AZUL_BLUE_BRIGHT;
+    private static final Color          PANEL_COLOR      = Color.BLACK;
+    private static final Color          BACKGROUND_COLOR = Constants.GRAY;
     private static final Color          TEXT_COLOR       = Constants.WHITE;
-    private static final double         FLIP_TIME        = 150;
+    private static final double         FLIP_TIME        = 100;
     private final        Row            row0             = new Row(BACKGROUND_COLOR, TEXT_COLOR, FLIP_TIME);
     private final        Row            row1             = new Row(BACKGROUND_COLOR, TEXT_COLOR, FLIP_TIME);
     private final        Row            row2             = new Row(BACKGROUND_COLOR, TEXT_COLOR, FLIP_TIME);
     private final        Row            row3             = new Row(BACKGROUND_COLOR, TEXT_COLOR, FLIP_TIME);
     private              VBox           vBox;
-    private              boolean        toggle;
+    private              int            screenCounter;
     private              long           lastTimerCall;
     private              AnimationTimer timer;
 
 
     @Override public void init() {
-        vBox          = new VBox(row0, row1, row2, row3);
-        toggle        = false;
-        lastTimerCall = System.nanoTime();
+        vBox          = new VBox(10, row0, row1, row2, row3);
+        screenCounter = 0;
+        lastTimerCall = System.nanoTime() - 10_000_000_000L;
         timer         = new AnimationTimer() {
             @Override public void handle(final long now) {
-                if (now - 15_000_000_000L > lastTimerCall) {
-                    toggle ^= true;
-                    if (toggle) {
-                        setTitle();
-                    } else {
-                        setSubTitle();
+                if (now - 12_000_000_000L > lastTimerCall) {
+                    switch (screenCounter) {
+                        case 0  -> setFirstScreen();
+                        case 1  -> setSecondScreen();
+                        default -> reset();
                     }
                     lastTimerCall = now;
                 }
@@ -50,18 +49,28 @@ public class Board extends Application {
         };
     }
 
-    private void setTitle() {
-        row0.reset();
-        row1.setText("    THE    ");
-        row2.setText("  JOURNEY  ");
-        row3.reset();
+    private void setFirstScreen() {
+        row0.setText("    2026   ");
+        row1.setText("  HAN SOLO ");
+        row2.setText("   LITTLE  ");
+        row3.setText("    TEST   ");
+        screenCounter++;
     }
 
-    private void setSubTitle() {
-        row0.setText("FOLLOW JAVA");
-        row1.setText("CODE ON ITS");
-        row2.setText("WAY THROUGH");
-        row3.setText("  THE JVM  ");
+    private void setSecondScreen() {
+        row0.setText("  JAVAFX   ");
+        row1.setText(" SPLITFLAP ");
+        row2.setText("  CONTROL  ");
+        row3.setText(" IN ACTION ");
+        screenCounter++;
+    }
+
+    private void reset() {
+        row0.reset();
+        row1.reset();
+        row2.reset();
+        row3.reset();
+        screenCounter = 0;
     }
 
     @Override public void start(final Stage stage) {
@@ -70,7 +79,7 @@ public class Board extends Application {
         pane.setBackground(new Background(new BackgroundFill(PANEL_COLOR, CornerRadii.EMPTY, Insets.EMPTY)));
 
         PerspectiveCamera camera = new PerspectiveCamera();
-        camera.setFieldOfView(30);
+        camera.setFieldOfView(20);
         camera.setNearClip(0.0);
 
         Scene scene = new Scene(pane);
@@ -79,23 +88,6 @@ public class Board extends Application {
         stage.setScene(scene);
         stage.show();
         stage.centerOnScreen();
-
-        /*
-        scene.setOnKeyPressed(evt -> {
-            final KeyCode keyCode = evt.getCode();
-            if (keyCode == KeyCode.ESCAPE) {
-                row0.reset();
-                row1.reset();
-                row2.reset();
-                row3.reset();
-            } else if (keyCode == KeyCode.T) {
-                row0.selfTest();
-                row1.selfTest();
-                row2.selfTest();
-                row3.selfTest();
-            }
-        });
-        */
 
         timer.start();
     }

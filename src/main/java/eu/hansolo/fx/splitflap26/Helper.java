@@ -8,7 +8,7 @@ public class Helper {
         return value;
     }
 
-    public static final int clamp(final int min, final int max, final int value) {
+    public static final long clamp(final long min, final long max, final long value) {
         if (value < min) { return min; }
         if (value > max) { return max; }
         return value;

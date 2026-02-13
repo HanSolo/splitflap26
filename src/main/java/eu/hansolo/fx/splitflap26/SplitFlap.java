@@ -1,6 +1,5 @@
 package eu.hansolo.fx.splitflap26;
 
-import eu.hansolo.fx.splitflap26.fonts.Fonts;
 import javafx.animation.Interpolator;
 import javafx.animation.KeyFrame;
 import javafx.animation.KeyValue;
@@ -16,6 +15,7 @@ import javafx.geometry.VPos;
 import javafx.scene.CacheHint;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
+import javafx.scene.layout.Background;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.Region;
 import javafx.scene.paint.Color;
@@ -27,21 +27,22 @@ import javafx.util.Duration;
 
 @DefaultProperty("children")
 public class SplitFlap extends Region {
-    private static final double                  PREFERRED_WIDTH  = 150;
-    private static final double                  PREFERRED_HEIGHT = 200;
-    private static final double                  MINIMUM_WIDTH    = 50;
-    private static final double                  MINIMUM_HEIGHT   = 50;
-    private static final double                  MAXIMUM_WIDTH    = 1024;
-    private static final double                  MAXIMUM_HEIGHT   = 1024;
-    private static final double                  ASPECT_RATIO     = PREFERRED_HEIGHT / PREFERRED_WIDTH;
+    public static final  double                  DEFAULT_FLIP_TIME = 100;
+    public static final  double                  PREFERRED_WIDTH   = 120;
+    public static final  double                  PREFERRED_HEIGHT  = 200;
+    private static final double                  MINIMUM_WIDTH     = 50;
+    private static final double                  MINIMUM_HEIGHT    = 50;
+    private static final double                  MAXIMUM_WIDTH     = 1024;
+    private static final double                  MAXIMUM_HEIGHT    = 1024;
+    private static final double                  ASPECT_RATIO      = PREFERRED_HEIGHT / PREFERRED_WIDTH;
     private              double                  halfFlipTime;
     private              double                  width;
     private              double                  height;
     private              double                  flapWidth;
     private              double                  flapHeight;
-    private              double                  flapCornerRadius;
     private              double                  flapCenterX;
     private              double                  fontOffsetY;
+    private              double                  fontOffsetYBottom;
     private              Canvas                  backTopCanvas;
     private              GraphicsContext         backTopCtx;
     private              Canvas                  backBottomCanvas;
@@ -53,15 +54,20 @@ public class SplitFlap extends Region {
     private              Pane                    pane;
     private              Color                   _backgroundColor;
     private              ObjectProperty<Color>   backgroundColor;
-    private              Color                   topColor;
-    private              Color                   bottomColor;
+    private              Color                   topBackgroundColor;
+    private              Color                   bottomBackgroundColor;
+    private              Color                   topFlapBackgroundColor;
+    private              Color                   bottomFlapBackgroundColor;
     private              Color                   _textColor;
     private              ObjectProperty<Color>   textColor;
+    private              Color                   topTextColor;
+    private              Color                   bottomTextColor;
     private              boolean                 _shaded;
     private              BooleanProperty         shaded;
+    private              SplitFlapFont           splitFlapFont;
     private              double                  fontSize;
     private              Font                    font;
-    private              CharacterSet            characterSet;
+    private final        CharacterSet            characterSet;
     private final        String[]                selectedCharacterSet;
     private              int                     nextIndex;
     private              int                     selectedIndex;
@@ -72,8 +78,8 @@ public class SplitFlap extends Region {
     private final        Rotate                  rotateBottomFlap;
     private final        Timeline                timelineTopFlap;
     private final        Timeline                timelineBottomFlap;
-    private              BooleanProperty         flipping;
-    private              ChangeListener<Boolean> flippingListener;
+    private final        BooleanProperty         flipping;
+    private final        ChangeListener<Boolean> flippingListener;
 
 
 
@@ -88,34 +94,39 @@ public class SplitFlap extends Region {
         this(CharacterSet.ALPHA_NUMERIC, backgroundColor, textColor);
     }
     public SplitFlap(final Color backgroundColor, final Color textColor, final double flipTime) {
-        this(CharacterSet.ALPHA_NUMERIC, backgroundColor, textColor, flipTime, false);
+        this(CharacterSet.ALPHA_NUMERIC, SplitFlapFont.BEBAS, backgroundColor, textColor, flipTime, false);
     }
     public SplitFlap(final CharacterSet characterSet, final Color backgroundColor, final Color textColor) {
-        this(characterSet, backgroundColor, textColor, Constants.DEFAULT_FLIP_TIME, false);
+        this(characterSet, SplitFlapFont.BEBAS, backgroundColor, textColor, DEFAULT_FLIP_TIME, false);
     }
-    public SplitFlap(final CharacterSet characterSet, final Color backgroundColor, final Color textColor, final double flipTime, final boolean shaded) {
+    public SplitFlap(final CharacterSet characterSet, final SplitFlapFont splitFlapFont, final Color backgroundColor, final Color textColor, final double flipTime, final boolean shaded) {
         if (flipTime < 10 || flipTime > 1000) { throw new IllegalArgumentException("Flip time must be within 10-1000 ms"); }
-        this.characterSet         = characterSet;
-        this.selectedCharacterSet = characterSet.characters;
-        this._backgroundColor     = backgroundColor;
-        this.topColor             = brighter(backgroundColor);
-        this.bottomColor          = darker(backgroundColor);
-        this._textColor           = textColor;
-        this._shaded              = shaded;
-        this.fontSize             = 250;
-        this.font                 = Fonts.bebasNeue(this.fontSize);
-        this.nextIndex            = 1;
-        this.selectedIndex        = 0;
-        this.prevIndex            = selectedCharacterSet.length - 1;
-        this.currentCharacter     = selectedCharacterSet[selectedIndex];
-        this.targetCharacter      = selectedCharacterSet[selectedIndex];
-        this.rotateTopFlap        = new Rotate(0, Rotate.X_AXIS);
-        this.rotateBottomFlap     = new Rotate(90, Rotate.X_AXIS);
-        this.timelineTopFlap      = new Timeline();
-        this.timelineBottomFlap   = new Timeline();
-        this.halfFlipTime         = flipTime / 2;
-        this.flipping             = new SimpleBooleanProperty(false);
-        this.flippingListener     = (o, ov, nv) -> { if (!nv) { setCharacter(" "); } };
+        this.characterSet              = characterSet;
+        this.selectedCharacterSet      = characterSet.characters;
+        this._backgroundColor          = backgroundColor;
+        this.topBackgroundColor        = darker(backgroundColor);
+        this.bottomBackgroundColor     = brighter(backgroundColor);
+        this.topFlapBackgroundColor    = darker(darker(topBackgroundColor));
+        this.bottomFlapBackgroundColor = darker(darker(bottomBackgroundColor));
+        this._textColor                = textColor;
+        this.topTextColor              = darker(textColor);
+        this.bottomTextColor           = brighter(textColor);
+        this._shaded                   = shaded;
+        this.splitFlapFont             = splitFlapFont;
+        this.fontSize                  = splitFlapFont.font.getSize();
+        this.font                      = splitFlapFont.font;
+        this.nextIndex                 = 1;
+        this.selectedIndex             = 0;
+        this.prevIndex                 = selectedCharacterSet.length - 1;
+        this.currentCharacter          = selectedCharacterSet[selectedIndex];
+        this.targetCharacter           = selectedCharacterSet[selectedIndex];
+        this.rotateTopFlap             = new Rotate(0, Rotate.X_AXIS);
+        this.rotateBottomFlap          = new Rotate(90, Rotate.X_AXIS);
+        this.timelineTopFlap           = new Timeline();
+        this.timelineBottomFlap        = new Timeline();
+        this.halfFlipTime              = flipTime / 2;
+        this.flipping                  = new SimpleBooleanProperty(false);
+        this.flippingListener          = (o, ov, nv) -> { if (!nv) { setCharacter(" "); } };
 
         initGraphics();
         registerListeners();
@@ -133,8 +144,8 @@ public class SplitFlap extends Region {
         }
 
         // Top half of background
-        backTopCanvas    = new Canvas(PREFERRED_WIDTH, PREFERRED_HEIGHT * 0.5);
-        backTopCtx       = backTopCanvas.getGraphicsContext2D();
+        backTopCanvas = new Canvas(PREFERRED_WIDTH, PREFERRED_HEIGHT * 0.5);
+        backTopCtx    = backTopCanvas.getGraphicsContext2D();
         backTopCtx.setTextBaseline(VPos.CENTER);
         backTopCtx.setTextAlign(TextAlignment.CENTER);
 
@@ -145,12 +156,12 @@ public class SplitFlap extends Region {
         backBottomCtx.setTextAlign(TextAlignment.CENTER);
 
         // Top half of flap
-        flapTopCanvas    = new Canvas(PREFERRED_WIDTH, PREFERRED_HEIGHT * 0.5);
+        flapTopCanvas = new Canvas(PREFERRED_WIDTH, PREFERRED_HEIGHT * 0.5);
         flapTopCanvas.getTransforms().add(rotateTopFlap);
         flapTopCanvas.setCache(true);
         flapTopCanvas.setCacheHint(CacheHint.ROTATE);
         flapTopCanvas.setCacheHint(CacheHint.SPEED);
-        flapTopCtx       = flapTopCanvas.getGraphicsContext2D();
+        flapTopCtx = flapTopCanvas.getGraphicsContext2D();
         flapTopCtx.setTextBaseline(VPos.CENTER);
         flapTopCtx.setTextAlign(TextAlignment.CENTER);
 
@@ -161,11 +172,12 @@ public class SplitFlap extends Region {
         flapBottomCanvas.setCacheHint(CacheHint.ROTATE);
         flapBottomCanvas.setCacheHint(CacheHint.SPEED);
         flapBottomCanvas.setVisible(false);
-        flapBottomCtx    = flapBottomCanvas.getGraphicsContext2D();
+        flapBottomCtx = flapBottomCanvas.getGraphicsContext2D();
         flapBottomCtx.setTextBaseline(VPos.CENTER);
         flapBottomCtx.setTextAlign(TextAlignment.CENTER);
 
         pane = new Pane(backTopCanvas, backBottomCanvas, flapTopCanvas, flapBottomCanvas);
+        pane.setBackground(Background.EMPTY);
 
         getChildren().setAll(pane);
     }
@@ -196,7 +208,11 @@ public class SplitFlap extends Region {
             this.flipping.set(false);
             this.flipping.removeListener(flippingListener);
 
-            if (!this.currentCharacter.equals(this.targetCharacter)) { flip(); }
+            if (this.currentCharacter.equals(this.targetCharacter)) {
+                fireEvent(new FlipEvent(SplitFlap.this, null, FlipEvent.FLIP_FINISHED));
+            } else {
+                flip();
+            }
         });
     }
 
@@ -207,9 +223,11 @@ public class SplitFlap extends Region {
     public Color getBackgroundColor() { return null == this.backgroundColor ? this._backgroundColor : this.backgroundColor.get(); }
     public void setBackgroundColor(final Color backgroundColor) {
         if (null == this.backgroundColor) {
-            this._backgroundColor = backgroundColor;
-            this.topColor         = brighter(backgroundColor);
-            this.bottomColor      = darker(backgroundColor);
+            this._backgroundColor          = backgroundColor;
+            this.topBackgroundColor        = darker(backgroundColor);
+            this.bottomBackgroundColor     = brighter(backgroundColor);
+            this.topFlapBackgroundColor    = darker(darker(topBackgroundColor));
+            this.bottomFlapBackgroundColor = darker(darker(bottomBackgroundColor));
             redraw();
         } else {
             this.backgroundColor.set(backgroundColor);
@@ -219,8 +237,11 @@ public class SplitFlap extends Region {
         if (null == this.backgroundColor) {
             this.backgroundColor = new ObjectPropertyBase<>(_backgroundColor) {
                 @Override protected void invalidated() {
-                    topColor    = brighter(get());
-                    bottomColor = darker(get());
+                    topBackgroundColor        = darker(get());
+                    bottomBackgroundColor     = brighter(get());
+                    topFlapBackgroundColor    = darker(darker(topBackgroundColor));
+                    bottomFlapBackgroundColor = darker(darker(bottomBackgroundColor));
+
                     redraw();
                 }
                 @Override public Object getBean() { return SplitFlap.this; }
@@ -234,7 +255,9 @@ public class SplitFlap extends Region {
     public Color getTextColor() { return null == this.textColor ? this._textColor : this.textColor.get(); }
     public void setTextColor(final Color textColor) {
         if (null == this.textColor) {
-            this._textColor = textColor;
+            this._textColor      = textColor;
+            this.topTextColor    = darker(textColor);
+            this.bottomTextColor = brighter(textColor);
             redraw();
         } else {
             this.textColor.set(textColor);
@@ -243,7 +266,11 @@ public class SplitFlap extends Region {
     public ObjectProperty<Color> textColorProperty() {
         if (null == this.textColor) {
             this.textColor = new ObjectPropertyBase<>(_textColor) {
-                @Override protected void invalidated() { redraw(); }
+                @Override protected void invalidated() {
+                    topTextColor    = darker(get());
+                    bottomTextColor = brighter(get());
+                    redraw();
+                }
                 @Override public Object getBean() { return SplitFlap.this; }
                 @Override public String getName() { return "textColor"; }
             };
@@ -272,17 +299,25 @@ public class SplitFlap extends Region {
         return shaded;
     }
 
+    public SplitFlapFont getFont() { return this.splitFlapFont; }
+    public void setFont(final SplitFlapFont splitFlapFont) {
+        this.splitFlapFont = splitFlapFont;
+        this.font          = SplitFlapFont.getFontAtSize(splitFlapFont, this.fontSize);
+        redraw();
+    }
+
     public boolean canFlip() { return !flipping.get(); }
 
     public void setCharacter(final String character) {
         if (!characterSetContainsCharacter(character)) { throw new IllegalArgumentException("Character " +  character + " is not in current character set ( " + characterSet.name() + ")"); }
         if (flipping.get()) { return; }
         this.targetCharacter = character;
+        fireEvent(new FlipEvent(SplitFlap.this, null, FlipEvent.FLIP_STARTED));
         flip();
     }
 
     public void setFlipTime(final double flipTime) {
-        if (flipTime < 10 || flipTime > 1000) { throw new IllegalArgumentException("Flip time must be within 10-1000 ms"); }
+        if (flipTime < 10 || flipTime > 5000) { throw new IllegalArgumentException("Flip time must be within 10-5000 ms"); }
         this.halfFlipTime = flipTime * 0.5;
     }
     public double getFlipTime() { return this.halfFlipTime * 2; }
@@ -296,7 +331,10 @@ public class SplitFlap extends Region {
     }
 
     private void flip() {
-        if (this.currentCharacter.equals(this.targetCharacter) || flipping.get()) { return; }
+        if (this.currentCharacter.equals(this.targetCharacter) || flipping.get()) {
+            fireEvent(new FlipEvent(SplitFlap.this, null, FlipEvent.FLIP_FINISHED));
+            return;
+        }
 
         timelineTopFlap.stop();
         timelineBottomFlap.stop();
@@ -305,7 +343,7 @@ public class SplitFlap extends Region {
         KeyFrame keyFrameTopFlap0    = new KeyFrame(Duration.millis(halfFlipTime), keyValueTopFlap0);
         timelineTopFlap.getKeyFrames().setAll(keyFrameTopFlap0);
 
-        KeyValue keyValueBottomFlap0 = new KeyValue(rotateBottomFlap.angleProperty(), 0, Interpolator.EASE_OUT);
+        KeyValue keyValueBottomFlap0 = new KeyValue(rotateBottomFlap.angleProperty(), 180, Interpolator.LINEAR);
         KeyFrame keyFrameBottomFlap0 = new KeyFrame(Duration.millis(halfFlipTime), keyValueBottomFlap0);
         timelineBottomFlap.getKeyFrames().setAll(keyFrameBottomFlap0);
 
@@ -345,17 +383,18 @@ public class SplitFlap extends Region {
         }
 
         if (width > 0 && height > 0) {
-            final double flapOffset  = Math.min(width, height) * 0.025;
-            final double flapOffset1 = flapOffset * 0.5;
-            flapWidth        = width * 0.95;
-            flapHeight       = height / 2.0 * 0.95;
-            flapCornerRadius = height * 0.08;
-            flapCenterX      = flapWidth * 0.5;
-            fontOffsetY      = height * 0.053;
-            fontSize         = height * 1.05;
-            font             = Fonts.bebasNeue(fontSize);
+            final double flapOffset  = Math.min(width, height) * 0.01;
+            final double flapOffset1 = flapOffset * 4;
+            flapWidth         = width * 0.98;
+            flapHeight        = height / 1.87 * 0.9;
+            flapCenterX       = flapWidth * 0.5;
+            fontOffsetY       = height * splitFlapFont.fontOffsetYTop;
+            fontOffsetYBottom = flapHeight * splitFlapFont.fontOffsetYBottom;
+            fontSize          = height * splitFlapFont.sizeFactor;
+            font              = SplitFlapFont.getFontAtSize(splitFlapFont, fontSize);
 
             rotateTopFlap.setPivotY(height * 0.5);
+            rotateBottomFlap.setPivotY(height * 0.5);
 
             backTopCanvas.setWidth(width);
             backTopCanvas.setHeight(flapHeight);
@@ -371,7 +410,7 @@ public class SplitFlap extends Region {
 
             flapBottomCanvas.setWidth(width);
             flapBottomCanvas.setHeight(flapHeight);
-            flapBottomCanvas.relocate(flapOffset, flapOffset + flapOffset1 + flapHeight);
+            flapBottomCanvas.relocate(flapOffset, flapOffset);
 
             pane.setMaxSize(width, height);
             pane.setPrefSize(width, height);
@@ -391,40 +430,91 @@ public class SplitFlap extends Region {
     private void redrawBackTop() {
         backTopCtx.setFont(font);
         backTopCtx.clearRect(0, 0, width, height);
-        backTopCtx.setFill(isShaded() ? topColor : getBackgroundColor());
-        backTopCtx.fillRoundRect(0, 0, flapWidth, flapHeight, flapCornerRadius, flapCornerRadius);
-        backTopCtx.fillRect(0, flapCornerRadius, flapWidth, flapHeight);
-        backTopCtx.setFill(getTextColor());
+        backTopCtx.setFill(isShaded() ? topBackgroundColor : getBackgroundColor());
+        backTopCtx.beginPath();
+        backTopCtx.moveTo(flapWidth * 0.965987288135593, flapHeight);
+        backTopCtx.lineTo(flapWidth * 0.034012711864406, flapHeight);
+        backTopCtx.lineTo(flapWidth * 0.0340127118644068, flapHeight * 0.917794871794872);
+        backTopCtx.lineTo(0, flapHeight * 0.917794871794872);
+        backTopCtx.lineTo(0, flapHeight * 0.0770666666666667);
+        backTopCtx.bezierCurveTo(0, flapHeight * 0.0345333333333333, flapWidth * 0.0285762711864407, 0, flapWidth * 0.0637754237288136, 0);
+        backTopCtx.lineTo(flapWidth * 0.936072033898305, 0);
+        backTopCtx.bezierCurveTo(flapWidth * 0.971351694915254, 0, flapWidth, flapHeight * 0.0346205128205128, flapWidth, flapHeight * 0.0772512820512821);
+        backTopCtx.lineTo(flapWidth, flapHeight * 0.917794871794872);
+        backTopCtx.lineTo(flapWidth * 0.965987288135593, flapHeight * 0.917794871794872);
+        backTopCtx.lineTo(flapWidth * 0.965987288135593, flapHeight);
+        backTopCtx.closePath();
+        backTopCtx.fill();
+        backTopCtx.setFill(isShaded() ? topTextColor : getTextColor());
         backTopCtx.fillText(selectedCharacterSet[nextIndex], flapCenterX, fontOffsetY + flapHeight);
     }
 
     private void redrawBackBottom() {
         backBottomCtx.setFont(font);
         backBottomCtx.clearRect(0, 0, width, height);
-        backBottomCtx.setFill(isShaded() ? bottomColor :  getBackgroundColor());
-        backBottomCtx.fillRoundRect(0, 0, flapWidth, flapHeight, flapCornerRadius, flapCornerRadius);
-        backBottomCtx.fillRect(0, -flapCornerRadius, flapWidth, flapHeight);
-        backBottomCtx.setFill(getTextColor());
+        backBottomCtx.setFill(isShaded() ? bottomBackgroundColor : getBackgroundColor());
+        backBottomCtx.beginPath();
+        backBottomCtx.moveTo(flapWidth * 0.965987288135593, 0);
+        backBottomCtx.lineTo(flapWidth * 0.0340127118644068, 0);
+        backBottomCtx.lineTo(flapWidth * 0.0340127118644068, flapHeight * 0.0822051282051282);
+        backBottomCtx.lineTo(0, flapHeight * 0.0822051282051282);
+        backBottomCtx.lineTo(0, flapHeight * 0.922933333333333);
+        backBottomCtx.bezierCurveTo(0, flapHeight * 0.965466666666667, flapWidth * 0.0285762711864407, flapHeight, flapWidth * 0.0637754237288136, flapHeight);
+        backBottomCtx.lineTo(flapWidth * 0.936072033898305, flapHeight);
+        backBottomCtx.bezierCurveTo(flapWidth * 0.971351694915254, flapHeight, flapWidth, flapHeight * 0.965379487179487, flapWidth, flapHeight * 0.922748717948718);
+        backBottomCtx.lineTo(flapWidth, flapHeight * 0.0822051282051282);
+        backBottomCtx.lineTo(flapWidth * 0.965987288135593, flapHeight * 0.0822051282051282);
+        backBottomCtx.lineTo(flapWidth * 0.965987288135593, 0);
+        backBottomCtx.closePath();
+        backBottomCtx.fill();
+        backBottomCtx.setFill(isShaded() ? bottomTextColor : getTextColor());
         backBottomCtx.fillText(selectedCharacterSet[selectedIndex], flapCenterX, fontOffsetY);
     }
 
     private void redrawFlapTop() {
         flapTopCtx.setFont(font);
         flapTopCtx.clearRect(0, 0, width, height);
-        flapTopCtx.setFill(isShaded() ? topColor : getBackgroundColor());
-        flapTopCtx.fillRoundRect(0, 0, flapWidth, flapHeight, flapCornerRadius, flapCornerRadius);
-        flapTopCtx.fillRect(0, flapCornerRadius, flapWidth, flapHeight);
-        flapTopCtx.setFill(getTextColor());
+        flapTopCtx.setFill(isShaded() ? topFlapBackgroundColor : getBackgroundColor());
+        flapTopCtx.beginPath();
+        flapTopCtx.moveTo(flapWidth * 0.965987288135593, flapHeight);
+        flapTopCtx.lineTo(flapWidth * 0.034012711864406, flapHeight);
+        flapTopCtx.lineTo(flapWidth * 0.0340127118644068, flapHeight * 0.917794871794872);
+        flapTopCtx.lineTo(0, flapHeight * 0.917794871794872);
+        flapTopCtx.lineTo(0, flapHeight * 0.0770666666666667);
+        flapTopCtx.bezierCurveTo(0, flapHeight * 0.0345333333333333, flapWidth * 0.0285762711864407, 0, flapWidth * 0.0637754237288136, 0);
+        flapTopCtx.lineTo(flapWidth * 0.936072033898305, 0);
+        flapTopCtx.bezierCurveTo(flapWidth * 0.971351694915254, 0, flapWidth, flapHeight * 0.0346205128205128, flapWidth, flapHeight * 0.0772512820512821);
+        flapTopCtx.lineTo(flapWidth, flapHeight * 0.917794871794872);
+        flapTopCtx.lineTo(flapWidth * 0.965987288135593, flapHeight * 0.917794871794872);
+        flapTopCtx.lineTo(flapWidth * 0.965987288135593, flapHeight);
+        flapTopCtx.closePath();
+        flapTopCtx.fill();
+        flapTopCtx.setFill(isShaded() ? topTextColor : getTextColor());
         flapTopCtx.fillText(selectedCharacterSet[selectedIndex], flapCenterX, fontOffsetY + flapHeight);
     }
 
     private void redrawFlapBottom() {
         flapBottomCtx.setFont(font);
         flapBottomCtx.clearRect(0, 0, width, height);
-        flapBottomCtx.setFill(isShaded() ? bottomColor :  getBackgroundColor());
-        flapBottomCtx.fillRoundRect(0, 0, flapWidth, flapHeight, flapCornerRadius, flapCornerRadius);
-        flapBottomCtx.fillRect(0, -flapCornerRadius, flapWidth, flapHeight);
-        flapBottomCtx.setFill(getTextColor());
-        flapBottomCtx.fillText(selectedCharacterSet[nextIndex], flapCenterX, fontOffsetY);
+        flapBottomCtx.setFill(isShaded() ? bottomFlapBackgroundColor : getBackgroundColor());
+        flapBottomCtx.beginPath();
+        flapBottomCtx.moveTo(flapWidth * 0.965987288135593, flapHeight);
+        flapBottomCtx.lineTo(flapWidth * 0.034012711864406, flapHeight);
+        flapBottomCtx.lineTo(flapWidth * 0.0340127118644068, flapHeight * 0.917794871794872);
+        flapBottomCtx.lineTo(0, flapHeight * 0.917794871794872);
+        flapBottomCtx.lineTo(0, flapHeight * 0.0770666666666667);
+        flapBottomCtx.bezierCurveTo(0, flapHeight * 0.0345333333333333, flapWidth * 0.0285762711864407, 0, flapWidth * 0.0637754237288136, 0);
+        flapBottomCtx.lineTo(flapWidth * 0.936072033898305, 0);
+        flapBottomCtx.bezierCurveTo(flapWidth * 0.971351694915254, 0, flapWidth, flapHeight * 0.0346205128205128, flapWidth, flapHeight * 0.0772512820512821);
+        flapBottomCtx.lineTo(flapWidth, flapHeight * 0.917794871794872);
+        flapBottomCtx.lineTo(flapWidth * 0.965987288135593, flapHeight * 0.917794871794872);
+        flapBottomCtx.lineTo(flapWidth * 0.965987288135593, flapHeight);
+        flapBottomCtx.closePath();
+        flapBottomCtx.fill();
+        flapBottomCtx.setFill(isShaded() ? bottomTextColor : getTextColor());
+        flapBottomCtx.save();
+        flapBottomCtx.scale(1.0, -1.0);
+        flapBottomCtx.fillText(selectedCharacterSet[nextIndex], flapCenterX, fontOffsetYBottom);
+        flapBottomCtx.restore();
     }
 }
