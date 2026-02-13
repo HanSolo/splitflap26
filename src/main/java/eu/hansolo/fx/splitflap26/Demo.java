@@ -62,14 +62,15 @@ public class Demo extends Application {
         Scene     scene = new Scene(pane, Color.BLACK);
         scene.setCamera(camera);
 
+        stage.setTitle("SplitFlap 2026");
         stage.setScene(scene);
         stage.show();
         stage.centerOnScreen();
 
-        splitFlap1.setCharacter("W");
-        splitFlap2.setCharacter("W");
-        splitFlap3.setCharacter("W");
-        splitFlap4.setCharacter("W");
+        splitFlap1.setCharacter("D");
+        splitFlap2.setCharacter("E");
+        splitFlap3.setCharacter("M");
+        splitFlap4.setCharacter("O");
 
         // Calculate number of nodes
         calcNoOfNodes(pane);
