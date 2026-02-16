@@ -19,6 +19,9 @@ import javafx.scene.layout.Background;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.Region;
 import javafx.scene.paint.Color;
+import javafx.scene.paint.CycleMethod;
+import javafx.scene.paint.LinearGradient;
+import javafx.scene.paint.Stop;
 import javafx.scene.text.Font;
 import javafx.scene.text.TextAlignment;
 import javafx.scene.transform.Rotate;
@@ -43,6 +46,8 @@ public class SplitFlap extends Region {
     private              double                  flapCenterX;
     private              double                  fontOffsetY;
     private              double                  fontOffsetYBottom;
+    private              Canvas                  backCanvas;
+    private              GraphicsContext         backCtx;
     private              Canvas                  backTopCanvas;
     private              GraphicsContext         backTopCtx;
     private              Canvas                  backBottomCanvas;
@@ -52,6 +57,7 @@ public class SplitFlap extends Region {
     private              Canvas                  flapBottomCanvas;
     private              GraphicsContext         flapBottomCtx;
     private              Pane                    pane;
+    private              LinearGradient          axisGradient;
     private              Color                   _backgroundColor;
     private              ObjectProperty<Color>   backgroundColor;
     private              Color                   topBackgroundColor;
@@ -62,13 +68,17 @@ public class SplitFlap extends Region {
     private              ObjectProperty<Color>   textColor;
     private              Color                   topTextColor;
     private              Color                   bottomTextColor;
+    private              boolean                 _axisVisible;
+    private              BooleanProperty         axisVisible;
     private              boolean                 _shaded;
     private              BooleanProperty         shaded;
-    private              SplitFlapFont           splitFlapFont;
     private              double                  fontSize;
+    private              SplitFlapFont           _splitFlapFont;
+    private              ObjectProperty<SplitFlapFont>    splitFlapFont;
     private              Font                    font;
-    private final        CharacterSet            characterSet;
-    private final        String[]                selectedCharacterSet;
+    private              CharacterSet            _characterSet;
+    private              ObjectProperty<CharacterSet> characterSet;
+    private              String[]                selectedCharacterSet;
     private              int                     nextIndex;
     private              int                     selectedIndex;
     private              int                     prevIndex;
@@ -85,24 +95,25 @@ public class SplitFlap extends Region {
 
     // ******************** Constructors **************************************
     public SplitFlap() {
-        this(CharacterSet.ALPHA_NUMERIC, Constants.GRAY, Constants.WHITE);
+        this(CharacterSet.ALPHA_NUMERIC, SplitFlapFont.BEBAS, Constants.GRAY, Constants.WHITE, DEFAULT_FLIP_TIME, true, false);
     }
     public SplitFlap(CharacterSet characterSet) {
-        this(characterSet, Constants.GRAY, Constants.WHITE);
+        this(characterSet, SplitFlapFont.BEBAS, Constants.GRAY, Constants.WHITE, DEFAULT_FLIP_TIME, true, false);
     }
     public SplitFlap(final Color backgroundColor, final Color textColor) {
-        this(CharacterSet.ALPHA_NUMERIC, backgroundColor, textColor);
+        this(CharacterSet.ALPHA_NUMERIC, SplitFlapFont.BEBAS, backgroundColor, textColor, DEFAULT_FLIP_TIME, true, false);
     }
     public SplitFlap(final Color backgroundColor, final Color textColor, final double flipTime) {
-        this(CharacterSet.ALPHA_NUMERIC, SplitFlapFont.BEBAS, backgroundColor, textColor, flipTime, false);
+        this(CharacterSet.ALPHA_NUMERIC, SplitFlapFont.BEBAS, backgroundColor, textColor, flipTime, true, false);
     }
     public SplitFlap(final CharacterSet characterSet, final Color backgroundColor, final Color textColor) {
-        this(characterSet, SplitFlapFont.BEBAS, backgroundColor, textColor, DEFAULT_FLIP_TIME, false);
+        this(characterSet, SplitFlapFont.BEBAS, backgroundColor, textColor, DEFAULT_FLIP_TIME, true, false);
     }
-    public SplitFlap(final CharacterSet characterSet, final SplitFlapFont splitFlapFont, final Color backgroundColor, final Color textColor, final double flipTime, final boolean shaded) {
+    public SplitFlap(final CharacterSet characterSet, final SplitFlapFont splitFlapFont, final Color backgroundColor, final Color textColor, final double flipTime, final boolean axisVisible, final boolean shaded) {
         if (flipTime < 10 || flipTime > 1000) { throw new IllegalArgumentException("Flip time must be within 10-1000 ms"); }
-        this.characterSet              = characterSet;
+        this._characterSet             = characterSet;
         this.selectedCharacterSet      = characterSet.characters;
+        this.axisGradient              = new LinearGradient(0, 0, 0, 1, true, CycleMethod.NO_CYCLE, new Stop(0, backgroundColor.darker()), new Stop(0.23, backgroundColor.brighter().brighter()), new Stop(1, backgroundColor.darker()));
         this._backgroundColor          = backgroundColor;
         this.topBackgroundColor        = darker(backgroundColor);
         this.bottomBackgroundColor     = brighter(backgroundColor);
@@ -111,8 +122,9 @@ public class SplitFlap extends Region {
         this._textColor                = textColor;
         this.topTextColor              = darker(textColor);
         this.bottomTextColor           = brighter(textColor);
+        this._axisVisible              = axisVisible;
         this._shaded                   = shaded;
-        this.splitFlapFont             = splitFlapFont;
+        this._splitFlapFont            = splitFlapFont;
         this.fontSize                  = splitFlapFont.font.getSize();
         this.font                      = splitFlapFont.font;
         this.nextIndex                 = 1;
@@ -142,6 +154,10 @@ public class SplitFlap extends Region {
                 setPrefSize(PREFERRED_WIDTH, PREFERRED_HEIGHT);
             }
         }
+
+        // Control background with "rotation axis"
+        backCanvas = new  Canvas(PREFERRED_WIDTH, PREFERRED_HEIGHT);
+        backCtx    = backCanvas.getGraphicsContext2D();
 
         // Top half of background
         backTopCanvas = new Canvas(PREFERRED_WIDTH, PREFERRED_HEIGHT * 0.5);
@@ -176,7 +192,7 @@ public class SplitFlap extends Region {
         flapBottomCtx.setTextBaseline(VPos.CENTER);
         flapBottomCtx.setTextAlign(TextAlignment.CENTER);
 
-        pane = new Pane(backTopCanvas, backBottomCanvas, flapTopCanvas, flapBottomCanvas);
+        pane = new Pane(backCanvas, backTopCanvas, backBottomCanvas, flapTopCanvas, flapBottomCanvas);
         pane.setBackground(Background.EMPTY);
 
         getChildren().setAll(pane);
@@ -218,11 +234,35 @@ public class SplitFlap extends Region {
 
 
     // ******************** Methods *******************************************
-    public CharacterSet getCharacterSet() { return this.characterSet; }
+    public CharacterSet getCharacterSet() { return null == this.characterSet ? this._characterSet : this.characterSet.get(); }
+    public void setCharacterSet(final CharacterSet characterSet) {
+        if (null == this.characterSet) {
+            this._characterSet        = characterSet;
+            this.selectedCharacterSet = characterSet.characters;
+            redraw();
+        } else {
+            this.characterSet.set(characterSet);
+        }
+    }
+    public ObjectProperty<CharacterSet> characterSetProperty() {
+        if (null == this.characterSet) {
+            this.characterSet = new ObjectPropertyBase<>(_characterSet) {
+                @Override protected void invalidated() {
+                    selectedCharacterSet = get().characters;
+                    redraw();
+                }
+                @Override public Object getBean() { return SplitFlap.this; }
+                @Override public String getName() { return "characterSet"; }
+            };
+        }
+
+        return this.characterSet;
+    }
 
     public Color getBackgroundColor() { return null == this.backgroundColor ? this._backgroundColor : this.backgroundColor.get(); }
     public void setBackgroundColor(final Color backgroundColor) {
         if (null == this.backgroundColor) {
+            this.axisGradient              = new LinearGradient(0, 0, 0, 1, true, CycleMethod.NO_CYCLE, new Stop(0, backgroundColor.darker()), new Stop(0.23, backgroundColor.brighter().brighter()), new Stop(1, backgroundColor.darker()));
             this._backgroundColor          = backgroundColor;
             this.topBackgroundColor        = darker(backgroundColor);
             this.bottomBackgroundColor     = brighter(backgroundColor);
@@ -237,6 +277,7 @@ public class SplitFlap extends Region {
         if (null == this.backgroundColor) {
             this.backgroundColor = new ObjectPropertyBase<>(_backgroundColor) {
                 @Override protected void invalidated() {
+                    axisGradient              = new LinearGradient(0, 0, 0, 1, true, CycleMethod.NO_CYCLE, new Stop(0, get().darker()), new Stop(0.23, get().brighter().brighter()), new Stop(1, get().darker()));
                     topBackgroundColor        = darker(get());
                     bottomBackgroundColor     = brighter(get());
                     topFlapBackgroundColor    = darker(darker(topBackgroundColor));
@@ -279,6 +320,31 @@ public class SplitFlap extends Region {
         return this.textColor;
     }
 
+    public boolean isAxisVisible() { return null == axisVisible ? _axisVisible : axisVisible.get(); }
+    public void setAxisVisible(final boolean axisVisible) {
+        if (null == this.axisVisible) {
+            backCanvas.setVisible(axisVisible);
+            backCanvas.setManaged(axisVisible);
+            redraw();
+        } else {
+            this.axisVisible.set(axisVisible);
+        }
+    }
+    public BooleanProperty axisVisibleProperty() {
+        if (null == this.axisVisible) {
+            this.axisVisible = new BooleanPropertyBase(_axisVisible) {
+                @Override protected void invalidated() {
+                    backCanvas.setVisible(get());
+                    backCanvas.setManaged(get());
+                    redraw();
+                }
+                @Override public Object getBean() { return SplitFlap.this; }
+                @Override public String getName() { return "axisVisible"; }
+            };
+        }
+        return this.axisVisible;
+    }
+
     public boolean isShaded() {return null == this.shaded ? this._shaded : this.shaded.get(); }
     public void setShaded(final boolean shaded) {
         if (null == this.shaded) {
@@ -299,17 +365,35 @@ public class SplitFlap extends Region {
         return shaded;
     }
 
-    public SplitFlapFont getFont() { return this.splitFlapFont; }
+    public SplitFlapFont getFont() { return null == this.splitFlapFont ? this._splitFlapFont : this.splitFlapFont.get(); }
     public void setFont(final SplitFlapFont splitFlapFont) {
-        this.splitFlapFont = splitFlapFont;
-        this.font          = SplitFlapFont.getFontAtSize(splitFlapFont, this.fontSize);
-        redraw();
+        if (null == this.splitFlapFont) {
+            this._splitFlapFont = splitFlapFont;
+            this.font           = SplitFlapFont.getFontAtSize(splitFlapFont, this.fontSize);
+            redraw();
+        } else {
+            this.splitFlapFont.set(splitFlapFont);
+        }
+    }
+    public ObjectProperty<SplitFlapFont> fontProperty() {
+        if (null == this.splitFlapFont) {
+            this.splitFlapFont = new ObjectPropertyBase<>(_splitFlapFont) {
+                @Override protected void invalidated() {
+                    font = SplitFlapFont.getFontAtSize(get(), fontSize);
+                    redraw();
+                }
+                @Override public Object getBean() { return SplitFlap.this; }
+                @Override public String getName() { return "font"; }
+            };
+            this._splitFlapFont = null;
+        }
+        return this.splitFlapFont;
     }
 
     public boolean canFlip() { return !flipping.get(); }
 
     public void setCharacter(final String character) {
-        if (!characterSetContainsCharacter(character)) { throw new IllegalArgumentException("Character " +  character + " is not in current character set ( " + characterSet.name() + ")"); }
+        if (!characterSetContainsCharacter(character)) { throw new IllegalArgumentException("Character " +  character + " is not in current character set ( " + getCharacterSet().name() + ")"); }
         if (flipping.get()) { return; }
         this.targetCharacter = character;
         fireEvent(new FlipEvent(SplitFlap.this, null, FlipEvent.FLIP_STARTED));
@@ -383,18 +467,22 @@ public class SplitFlap extends Region {
         }
 
         if (width > 0 && height > 0) {
-            final double flapOffset  = Math.min(width, height) * 0.01;
-            final double flapOffset1 = flapOffset * 4;
+            final double        flapOffset  = Math.min(width, height) * 0.01;
+            final double        flapOffset1 = flapOffset * 4;
+            final SplitFlapFont sff         = getFont();
             flapWidth         = width * 0.98;
             flapHeight        = height / 1.87 * 0.9;
             flapCenterX       = flapWidth * 0.5;
-            fontOffsetY       = height * splitFlapFont.fontOffsetYTop;
-            fontOffsetYBottom = flapHeight * splitFlapFont.fontOffsetYBottom;
-            fontSize          = height * splitFlapFont.sizeFactor;
-            font              = SplitFlapFont.getFontAtSize(splitFlapFont, fontSize);
+            fontOffsetY       = height * sff.fontOffsetYTop;
+            fontOffsetYBottom = flapHeight * sff.fontOffsetYBottom;
+            fontSize          = height * sff.sizeFactor;
+            font              = SplitFlapFont.getFontAtSize(sff, fontSize);
 
             rotateTopFlap.setPivotY(height * 0.5);
             rotateBottomFlap.setPivotY(height * 0.5);
+
+            backCanvas.setWidth(width);
+            backCanvas.setHeight(height);
 
             backTopCanvas.setWidth(width);
             backTopCanvas.setHeight(flapHeight);
@@ -421,13 +509,22 @@ public class SplitFlap extends Region {
     }
 
     private void redraw() {
-        redrawBackTop();
-        redrawBackBottom();
-        redrawFlapTop();
-        redrawFlapBottom();
+        if (isAxisVisible()) { drawBack(); }
+        drawBackTop();
+        drawBackBottom();
+        drawFlapTop();
+        drawFlapBottom();
     }
 
-    private void redrawBackTop() {
+    private void drawBack() {
+        backCtx.clearRect(0, 0, width, height);
+        backCtx.setFill(axisGradient);
+        backCtx.fillRect(width * 0.0041666666666, height * 0.4525, width * 0.03333333333333, height * 0.095);
+        backCtx.fillRect(width * 0.9625, height * 0.4525, width * 0.03333333333333, height * 0.095);
+        backCtx.fillRect(width * 0.0375, 0.4925 * height, 0.925 * width, 0.015 * 200);
+    }
+
+    private void drawBackTop() {
         backTopCtx.setFont(font);
         backTopCtx.clearRect(0, 0, width, height);
         backTopCtx.setFill(isShaded() ? topBackgroundColor : getBackgroundColor());
@@ -449,7 +546,7 @@ public class SplitFlap extends Region {
         backTopCtx.fillText(selectedCharacterSet[nextIndex], flapCenterX, fontOffsetY + flapHeight);
     }
 
-    private void redrawBackBottom() {
+    private void drawBackBottom() {
         backBottomCtx.setFont(font);
         backBottomCtx.clearRect(0, 0, width, height);
         backBottomCtx.setFill(isShaded() ? bottomBackgroundColor : getBackgroundColor());
@@ -471,7 +568,7 @@ public class SplitFlap extends Region {
         backBottomCtx.fillText(selectedCharacterSet[selectedIndex], flapCenterX, fontOffsetY);
     }
 
-    private void redrawFlapTop() {
+    private void drawFlapTop() {
         flapTopCtx.setFont(font);
         flapTopCtx.clearRect(0, 0, width, height);
         flapTopCtx.setFill(isShaded() ? topFlapBackgroundColor : getBackgroundColor());
@@ -493,7 +590,7 @@ public class SplitFlap extends Region {
         flapTopCtx.fillText(selectedCharacterSet[selectedIndex], flapCenterX, fontOffsetY + flapHeight);
     }
 
-    private void redrawFlapBottom() {
+    private void drawFlapBottom() {
         flapBottomCtx.setFont(font);
         flapBottomCtx.clearRect(0, 0, width, height);
         flapBottomCtx.setFill(isShaded() ? bottomFlapBackgroundColor : getBackgroundColor());

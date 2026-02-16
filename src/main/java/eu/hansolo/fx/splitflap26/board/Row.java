@@ -41,7 +41,7 @@ public class Row extends HBox {
     private void initGraphics() {
         splitFlaps = new SplitFlap[NO_OF_CHARACTERS];
         for (int i = 0; i < NO_OF_CHARACTERS; i++) {
-            splitFlaps[i] = new SplitFlap(characterSet, SplitFlapFont.BEBAS, backgroundColor, textColor, flipTime, true);
+            splitFlaps[i] = new SplitFlap(characterSet, SplitFlapFont.BEBAS, backgroundColor, textColor, flipTime, true, true);
         }
         setSpacing(5);
         getChildren().addAll(Arrays.asList(splitFlaps));
