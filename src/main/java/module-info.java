@@ -10,4 +10,5 @@ module eu.hansolo.fx.splitflap26 {
     exports eu.hansolo.fx.splitflap26;
     exports eu.hansolo.fx.splitflap26.fonts;
     exports eu.hansolo.fx.splitflap26.board;
+    exports eu.hansolo.fx.splitflap26.vestaboard;
 }

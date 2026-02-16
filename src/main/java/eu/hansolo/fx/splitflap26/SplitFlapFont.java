@@ -8,7 +8,8 @@ public enum SplitFlapFont {
     BEBAS(Fonts.bebasNeue(SplitFlap.PREFERRED_HEIGHT), 0.85, 0.053, -0.92),
     BEBAS_ROUNDED(Fonts.bebasNeueRounded(SplitFlap.PREFERRED_HEIGHT), 0.85, 0.053, -0.92),
     SWAG_URBANO(Fonts.swagURBanoRegular(SplitFlap.PREFERRED_HEIGHT), 0.85, 0.06, -0.9),
-    DIN_CONDENSED(Fonts.dinCondensedBold(SplitFlap.PREFERRED_HEIGHT), 0.85, 0.01, -1.01);
+    DIN_CONDENSED(Fonts.dinCondensedBold(SplitFlap.PREFERRED_HEIGHT), 0.85, 0.01, -1.01),
+    DIN(Fonts.din(SplitFlap.PREFERRED_HEIGHT), 0.84, 0.1, -0.83);
 
     public final Font   font;
     public final double sizeFactor;
@@ -26,6 +27,7 @@ public enum SplitFlapFont {
 
     public static final Font getFontAtSize(final SplitFlapFont splitFlapFont, final double size) {
         switch (splitFlapFont) {
+            case DIN           -> { return Fonts.din(size);            }
             case DIN_CONDENSED -> { return Fonts.dinCondensedBold(size);  }
             case SWAG_URBANO   -> { return Fonts.swagURBanoRegular(size); }
             case BEBAS_ROUNDED -> { return Fonts.bebasNeueRounded(size);  }

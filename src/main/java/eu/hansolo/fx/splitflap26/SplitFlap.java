@@ -164,6 +164,8 @@ public class SplitFlap extends Region {
         backTopCtx    = backTopCanvas.getGraphicsContext2D();
         backTopCtx.setTextBaseline(VPos.CENTER);
         backTopCtx.setTextAlign(TextAlignment.CENTER);
+        backCanvas.setVisible(isAxisVisible());
+        backCanvas.setManaged(isAxisVisible());
 
         // Bottom half of background
         backBottomCanvas = new Canvas(PREFERRED_WIDTH, PREFERRED_HEIGHT * 0.5);

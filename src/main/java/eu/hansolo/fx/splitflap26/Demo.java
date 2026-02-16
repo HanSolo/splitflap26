@@ -8,15 +8,10 @@ import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.PerspectiveCamera;
 import javafx.scene.Scene;
-import javafx.scene.layout.Background;
-import javafx.scene.layout.BackgroundFill;
-import javafx.scene.layout.CornerRadii;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.StackPane;
 import javafx.scene.paint.Color;
 import javafx.stage.Stage;
-
-import javax.net.ssl.SNIHostName;
 
 
 public class Demo extends Application {
@@ -27,6 +22,7 @@ public class Demo extends Application {
     private              SplitFlap splitFlap2;
     private              SplitFlap splitFlap3;
     private              SplitFlap splitFlap4;
+    private              SplitFlap splitFlap5;
 
 
     @Override public void init() {
@@ -51,10 +47,15 @@ public class Demo extends Application {
         splitFlap4.setFont(SplitFlapFont.DIN_CONDENSED);
         splitFlap4.addEventHandler(FlipEvent.FLIP_STARTED, _ -> { System.out.println("FLIP STARTED"); });
         splitFlap4.addEventHandler(FlipEvent.FLIP_FINISHED, _ -> { System.out.println("FLIP_FINISHED"); });
+
+        splitFlap5 = new SplitFlap(CharacterSet.ALPHA_NUMERIC_EXTENDED);
+        splitFlap5.setShaded(SHADED);
+        splitFlap5.setFlipTime(FLIP_TIME);
+        splitFlap5.setFont(SplitFlapFont.DIN);
     }
 
     @Override public void start(final Stage stage) {
-        HBox      hBox = new HBox(10, splitFlap1, splitFlap2, splitFlap3, splitFlap4);
+        HBox      hBox = new HBox(10, splitFlap1, splitFlap2, splitFlap3, splitFlap4, splitFlap5);
         StackPane pane = new StackPane(hBox);
         pane.setPadding(new Insets(20));
 
@@ -74,6 +75,7 @@ public class Demo extends Application {
         splitFlap2.setCharacter("E");
         splitFlap3.setCharacter("M");
         splitFlap4.setCharacter("O");
+        splitFlap5.setCharacter("1");
 
         // Calculate number of nodes
         calcNoOfNodes(pane);
