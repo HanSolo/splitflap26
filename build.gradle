@@ -86,13 +86,23 @@ jar {
 }
 
 // start the single split flap from gradle
-tasks.register('Demo', JavaExec) {
-    mainClass = "eu.hansolo.fx.splitflap26.Launcher"
+tasks.register('demo', JavaExec) {
+    mainClass = "eu.hansolo.fx.splitflap26.DemoLauncher"
     classpath = sourceSets.main.runtimeClasspath
 }
 
 tasks.register('board', JavaExec) {
-    mainClass = "eu.hansolo.fx.splitflap26.board.Launcher"
+    mainClass = "eu.hansolo.fx.splitflap26.board.BoardLauncher"
+    classpath = sourceSets.main.runtimeClasspath
+}
+
+tasks.register('clock', JavaExec) {
+    mainClass = "eu.hansolo.fx.splitflap26.clock.ClockLauncher"
+    classpath = sourceSets.main.runtimeClasspath
+}
+
+tasks.register('vestaboard', JavaExec) {
+    mainClass = "eu.hansolo.fx.splitflap26.vestaboard.VestaBoardLauncher"
     classpath = sourceSets.main.runtimeClasspath
 }
 
