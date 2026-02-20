@@ -9,5 +9,13 @@ You can also set the background color for the SplitFlap and the text color. If y
 select shaded=true, the given background and text color will be shaded a little bit for
 the upper and lower part of the control.
 
+Demo
 ![Screenshot](https://github.com/HanSolo/splitflap26/raw/main/SplitFlap26.png)
 
+
+Clock
+![Screenshot](https://github.com/HanSolo/splitflap26/raw/main/clock.png)
+
+
+Vestaboard
+![Screenshot](https://github.com/HanSolo/splitflap26/raw/main/vestaboard.png)
