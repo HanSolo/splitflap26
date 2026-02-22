@@ -1,6 +1,8 @@
 package eu.hansolo.fx.splitflap26.board;
 
+import eu.hansolo.fx.splitflap26.CharacterSet;
 import eu.hansolo.fx.splitflap26.Constants;
+import eu.hansolo.fx.splitflap26.Row;
 import javafx.animation.AnimationTimer;
 import javafx.application.Application;
 import javafx.application.Platform;
@@ -17,14 +19,12 @@ import javafx.stage.Stage;
 
 
 public class Board extends Application {
-    private static final Color          PANEL_COLOR      = Color.BLACK;
-    private static final Color          BACKGROUND_COLOR = Constants.GRAY;
-    private static final Color          TEXT_COLOR       = Constants.WHITE;
-    private static final double         FLIP_TIME        = 100;
-    private final        Row            row0             = new Row(BACKGROUND_COLOR, TEXT_COLOR, FLIP_TIME);
-    private final        Row            row1             = new Row(BACKGROUND_COLOR, TEXT_COLOR, FLIP_TIME);
-    private final        Row            row2             = new Row(BACKGROUND_COLOR, TEXT_COLOR, FLIP_TIME);
-    private final        Row            row3             = new Row(BACKGROUND_COLOR, TEXT_COLOR, FLIP_TIME);
+    private static final Color          PANEL_COLOR = Color.BLACK;
+    private static final double         FLIP_TIME   = 100;
+    private final        Row            row0        = new Row(CharacterSet.ALPHA_NUMERIC, 11, FLIP_TIME, true, true);
+    private final        Row            row1        = new Row(CharacterSet.ALPHA_NUMERIC, 11, FLIP_TIME, true, true);
+    private final        Row            row2        = new Row(CharacterSet.ALPHA_NUMERIC, 11, FLIP_TIME, true, true);
+    private final        Row            row3        = new Row(CharacterSet.ALPHA_NUMERIC, 11, FLIP_TIME, true, true);
     private              VBox           vBox;
     private              int            screenCounter;
     private              long           lastTimerCall;

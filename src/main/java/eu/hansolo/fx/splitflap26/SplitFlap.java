@@ -408,12 +408,12 @@ public class SplitFlap extends Region {
     }
     public double getFlipTime() { return this.halfFlipTime * 2; }
 
-    public void reset() { setCharacter(" "); }
+    public void reset() { setCharacter(this.selectedCharacterSet[0]); }
 
-    public void selfTest() {
+    public void selfCheck() {
         flipping.addListener(this.flippingListener);
         reset();
-        setCharacter("Z");
+        setCharacter(this.selectedCharacterSet[this.selectedCharacterSet.length - 1]);
     }
 
     private void flip() {

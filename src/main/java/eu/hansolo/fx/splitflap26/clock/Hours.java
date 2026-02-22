@@ -32,7 +32,7 @@ public class Hours extends HBox {
 
     // ******************** Initialization ************************************
     private void initGraphics() {
-        splitFlapHourLeft  = new SplitFlap(CharacterSet.TIME_0_TO_5, SplitFlapFont.BEBAS, backgroundColor, textColor, flipTime, true, true);
+        splitFlapHourLeft  = new SplitFlap(CharacterSet.TIME_0_TO_9, SplitFlapFont.BEBAS, backgroundColor, textColor, flipTime, true, true);
         splitFlapHourRight = new SplitFlap(CharacterSet.TIME_0_TO_9, SplitFlapFont.BEBAS, backgroundColor, textColor, flipTime, true, true);
         setSpacing(5);
         getChildren().addAll(splitFlapHourLeft, splitFlapHourRight);

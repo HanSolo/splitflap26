@@ -1,6 +1,9 @@
 package eu.hansolo.fx.splitflap26.vestaboard;
 
+import eu.hansolo.fx.splitflap26.CharacterSet;
 import eu.hansolo.fx.splitflap26.Constants;
+import eu.hansolo.fx.splitflap26.Row;
+import eu.hansolo.fx.splitflap26.SplitFlapFont;
 import javafx.animation.AnimationTimer;
 import javafx.application.Application;
 import javafx.application.Platform;
@@ -20,12 +23,12 @@ public class VestaBoard extends Application {
     private static final Color          BACKGROUND_COLOR = Constants.GRAY;
     private static final Color          TEXT_COLOR       = Color.rgb(131, 131, 136);
     private static final double         FLIP_TIME        = 100;
-    private final        Row            row0             = new Row(BACKGROUND_COLOR, TEXT_COLOR, FLIP_TIME);
-    private final        Row            row1             = new Row(BACKGROUND_COLOR, TEXT_COLOR, FLIP_TIME);
-    private final        Row            row2             = new Row(BACKGROUND_COLOR, TEXT_COLOR, FLIP_TIME);
-    private final        Row            row3             = new Row(BACKGROUND_COLOR, TEXT_COLOR, FLIP_TIME);
-    private final        Row            row4             = new Row(BACKGROUND_COLOR, TEXT_COLOR, FLIP_TIME);
-    private final        Row            row5             = new Row(BACKGROUND_COLOR, TEXT_COLOR, FLIP_TIME);
+    private final        Row            row0             = new Row(CharacterSet.ALPHA_NUMERIC, SplitFlapFont.DIN, 22, FLIP_TIME, BACKGROUND_COLOR, TEXT_COLOR, true, true);
+    private final        Row            row1             = new Row(CharacterSet.ALPHA_NUMERIC, SplitFlapFont.DIN, 22, FLIP_TIME, BACKGROUND_COLOR, TEXT_COLOR, true, true);
+    private final        Row            row2             = new Row(CharacterSet.ALPHA_NUMERIC, SplitFlapFont.DIN, 22, FLIP_TIME, BACKGROUND_COLOR, TEXT_COLOR, true, true);
+    private final        Row            row3             = new Row(CharacterSet.ALPHA_NUMERIC, SplitFlapFont.DIN, 22, FLIP_TIME, BACKGROUND_COLOR, TEXT_COLOR, true, true);
+    private final        Row            row4             = new Row(CharacterSet.ALPHA_NUMERIC, SplitFlapFont.DIN, 22, FLIP_TIME, BACKGROUND_COLOR, TEXT_COLOR, true, true);
+    private final        Row            row5             = new Row(CharacterSet.ALPHA_NUMERIC, SplitFlapFont.DIN, 22, FLIP_TIME, BACKGROUND_COLOR, TEXT_COLOR, true, true);
     private              VBox           vBox;
     private              int            screenCounter;
     private              long           lastTimerCall;
