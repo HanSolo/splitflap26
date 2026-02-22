@@ -41,6 +41,9 @@ public class Row extends HBox {
     public Row(final CharacterSet characterSet, final SplitFlapFont splitFlapFont, final int noOfCharacters, final double flipTime, final boolean axisVisible, final boolean shaded) {
         this(characterSet, splitFlapFont, noOfCharacters, flipTime, Constants.GRAY, Constants.WHITE, axisVisible, shaded);
     }
+    public Row(final CharacterSet characterSet, final int noOfCharacters, final double flipTime, final Color backgroundColor, final Color textColor, final boolean axisVisible, final boolean shaded) {
+        this(characterSet, SplitFlapFont.BEBAS, noOfCharacters, flipTime, backgroundColor, textColor, axisVisible, shaded);
+    }
     public Row(final CharacterSet characterSet, final SplitFlapFont splitFlapFont, final int noOfCharacters, final double flipTime, final Color backgroundColor, final Color textColor, final boolean axisVisible, final boolean shaded) {
         this._characterSet    = characterSet;
         this._splitFlapFont   = splitFlapFont;

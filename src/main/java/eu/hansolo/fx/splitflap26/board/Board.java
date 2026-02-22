@@ -21,9 +21,9 @@ import javafx.stage.Stage;
 public class Board extends Application {
     private static final Color          PANEL_COLOR = Color.BLACK;
     private static final double         FLIP_TIME   = 100;
-    private final        Row            row0        = new Row(CharacterSet.ALPHA_NUMERIC, 11, FLIP_TIME, true, true);
-    private final        Row            row1        = new Row(CharacterSet.ALPHA_NUMERIC, 11, FLIP_TIME, true, true);
-    private final        Row            row2        = new Row(CharacterSet.ALPHA_NUMERIC, 11, FLIP_TIME, true, true);
+    private final        Row            row0        = new Row(CharacterSet.ALPHA_NUMERIC, 11, FLIP_TIME, Color.RED, Color.WHITE, true, true);
+    private final        Row            row1        = new Row(CharacterSet.ALPHA_NUMERIC, 11, FLIP_TIME, Color.GREEN, Color.WHITE, true, true);
+    private final        Row            row2        = new Row(CharacterSet.ALPHA_NUMERIC, 11, FLIP_TIME, Color.BLUE, Color.WHITE, true, true);
     private final        Row            row3        = new Row(CharacterSet.ALPHA_NUMERIC, 11, FLIP_TIME, true, true);
     private              VBox           vBox;
     private              int            screenCounter;
